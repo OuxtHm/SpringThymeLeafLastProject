@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import com.sist.web.service.*;
 import com.sist.web.vo.*;
 
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 
 /*
@@ -76,27 +77,37 @@ public class RecipeController {
 	
 	
 	@GetMapping("detail")
-	public String recipe_detail(@RequestParam("no")int no, Model model)
-	{
-		// DB 연동
-		RecipeDetailVO vo = rService.recipeDetailData(no);
-		List<String> mList = new ArrayList<String>();
-		List<String> nList = new ArrayList<String>();
-		String[] datas = vo.getFoodmake().split("\n");
-		for(String s : datas)
-		{
-			StringTokenizer st = new StringTokenizer(s,"^");
-			mList.add(st.nextToken());
-			nList.add(st.nextToken());
-		}
-		
-		model.addAttribute("mList", mList);
-		model.addAttribute("nList", nList);
-		model.addAttribute("vo", vo);
-		// 댓글
-		model.addAttribute("main_html", "recipe/detail");
-		return "main/main";
-	}
+	   public String recipe_detail(@RequestParam("no") int no, 
+			   Model model,HttpSession session)
+	   {
+		   // DB 연동 
+		   RecipeDetailVO vo=rService.recipeDetailData(no);
+		   List<String> mList=new ArrayList<String>();
+		   List<String> nList=new ArrayList<String>();
+		   String[] datas=vo.getFoodmake().split("\n");
+		   // 1. 조리 ^image\n / 2 .........
+		   for(String s:datas)
+		   {
+			   StringTokenizer st=new StringTokenizer(s,"^");
+			   mList.add(st.nextToken());
+			   nList.add(st.nextToken());
+		   }
+		   model.addAttribute("mList", mList);
+		   model.addAttribute("nList", nList);
+		   model.addAttribute("vo", vo);
+		   String id=(String)session.getAttribute("id");
+		   	if(id==null)
+		   	{
+		   		model.addAttribute("sessionId", "");
+		   	}
+		   	else
+		   	{
+		   		model.addAttribute("sessionId", id);
+		   	}
+		   // 댓글 
+		   model.addAttribute("main_html", "recipe/detail");
+		   return "main/main";
+	   }
 
 	  @GetMapping("chef_list")
 	   public String recipe_chef_list(
