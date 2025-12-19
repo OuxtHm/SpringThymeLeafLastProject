@@ -1,0 +1,135 @@
+package com.sist.web.controller;
+
+import java.util.*;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import com.sist.web.service.*;
+import com.sist.web.vo.*;
+
+import lombok.RequiredArgsConstructor;
+
+/*
+	----------------------------
+	@Controller
+	@RestController
+	---------------------------- 이 둘만 유일하게 DispatcherServlet 와 연결 => 사용은 
+
+*/
+/*
+	한개 page = 1		=> @RequestParam("page")
+	
+	VO 단위 => @ModelAttribute("vo")
+	
+	
+	{
+		no:1, 
+		name: '',
+	}	=> JSON => 객체로 변환 @RequestBody
+	
+	@ResponseBody @RestController
+		|				|
+		-----------------
+			| 다른 언어로 값을 전송
+			
+	XML => 변경 (어노테이션)
+*/
+@Controller
+@RequiredArgsConstructor
+@RequestMapping("/recipe/")
+public class RecipeController {
+	private final RecipeService rService;
+	
+	@GetMapping("list")
+	public String recipe_list(@RequestParam(name = "page", required = false) String page, Model model)
+	{
+		if(page == null)
+			page = "1";
+		int curpage = Integer.parseInt(page);
+		
+		int start = (12 * curpage) - 12;
+		
+		
+		List<RecipeVO> list = rService.recipeListDate(start);
+		int totalpage = rService.recipeTotalPage();
+		
+		final int BLOCK = 10;
+		int startPage = ((curpage -1) / BLOCK * BLOCK) + 1;
+		int endPage = ((curpage -1) / BLOCK * BLOCK) + BLOCK;
+		
+		if(endPage > totalpage)
+			endPage = totalpage;
+		
+		model.addAttribute("list", list);
+		model.addAttribute("curpage", curpage);
+		model.addAttribute("totalpage", totalpage);
+		model.addAttribute("startPage", startPage);
+		model.addAttribute("endPage", endPage);
+		
+		model.addAttribute("main_html", "recipe/list");
+		return "main/main";
+	}
+	
+	
+	@GetMapping("detail")
+	public String recipe_detail(@RequestParam("no")int no, Model model)
+	{
+		// DB 연동
+		RecipeDetailVO vo = rService.recipeDetailData(no);
+		List<String> mList = new ArrayList<String>();
+		List<String> nList = new ArrayList<String>();
+		String[] datas = vo.getFoodmake().split("\n");
+		for(String s : datas)
+		{
+			StringTokenizer st = new StringTokenizer(s,"^");
+			mList.add(st.nextToken());
+			nList.add(st.nextToken());
+		}
+		
+		model.addAttribute("mList", mList);
+		model.addAttribute("nList", nList);
+		model.addAttribute("vo", vo);
+		// 댓글
+		model.addAttribute("main_html", "recipe/detail");
+		return "main/main";
+	}
+
+	  @GetMapping("chef_list")
+	   public String recipe_chef_list(
+			   @RequestParam(name="page",required = false) String page,
+			   @RequestParam("chef") String chef,Model model)
+	   {
+		   // DB 연동 
+		   if(page==null)
+		   		  page="1";
+			   	int curpage=Integer.parseInt(page);// 현재 페이지
+			   	// 현재 페이지의 데이터 읽기
+			   	int start=(curpage-1)*12;
+			   	
+			   	List<RecipeVO> list=rService.recipeChefListData(start, chef);
+			   	// 0 , 12, 24...
+			   	// 총페이지 읽기
+			   	int totalpage=rService.recipeChefTotalPage(chef);
+			   	
+			   	final int BLOCK=10;
+			   	int startPage=((curpage-1)/BLOCK*BLOCK)+1;
+			   	int endPage=((curpage-1)/BLOCK*BLOCK)+BLOCK;
+			   	
+			   	if(endPage>totalpage)
+			   		endPage=totalpage;
+			   	
+			   	model.addAttribute("list", list);
+			   	model.addAttribute("curpage", curpage);
+			   	model.addAttribute("totalpage", totalpage);
+			   	model.addAttribute("startPage", startPage);
+			   	model.addAttribute("endPage", endPage);
+			   	model.addAttribute("chef", chef);
+			   	model.addAttribute("main_html", "recipe/chef_list");
+		   return "main/main";
+	   }
+	
+}
